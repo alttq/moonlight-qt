@@ -548,6 +548,7 @@ bool D3D11VARenderer::initialize(PDECODER_PARAMETERS params)
         framesContext->initial_pool_size = DECODER_BUFFER_POOL_SIZE;
 
         AVD3D11VAFramesContext* d3d11vaFramesContext = (AVD3D11VAFramesContext*)framesContext->hwctx;
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Running d3d11");
 
         d3d11vaFramesContext->BindFlags = D3D11_BIND_DECODER;
         if (m_BindDecoderOutputTextures) {
@@ -619,6 +620,12 @@ void D3D11VARenderer::renderFrame(AVFrame* frame)
     // Render our video frame with the aspect-ratio adjusted viewport
     renderVideo(frame);
 
+    captureRGBValues();
+
+
+    /*SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                "info ddd");*/
+
     // Render overlays on top of the video stream
     for (int i = 0; i < Overlay::OverlayMax; i++) {
         renderOverlay((Overlay::OverlayType)i);
@@ -682,6 +689,67 @@ void D3D11VARenderer::renderFrame(AVFrame* frame)
         SDL_PushEvent(&event);
         return;
     }
+}
+
+void D3D11VARenderer::captureRGBValues()
+{
+    // Create a staging texture to copy the back buffer data
+    ComPtr<ID3D11Texture2D> backBuffer;
+    HRESULT hr = m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)backBuffer.GetAddressOf());
+    if (FAILED(hr)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "IDXGISwapChain::GetBuffer() failed: %x", hr);
+        return;
+    }
+
+    D3D11_TEXTURE2D_DESC desc;
+    backBuffer->GetDesc(&desc);
+
+    D3D11_TEXTURE2D_DESC stagingDesc = desc;
+    stagingDesc.Usage = D3D11_USAGE_STAGING;
+    stagingDesc.BindFlags = 0;
+    stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    stagingDesc.MiscFlags = 0;
+
+    ComPtr<ID3D11Texture2D> stagingTexture;
+    hr = m_Device->CreateTexture2D(&stagingDesc, nullptr, stagingTexture.GetAddressOf());
+    if (FAILED(hr)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "ID3D11Device::CreateTexture2D() failed: %x", hr);
+        return;
+    }
+
+    m_DeviceContext->CopyResource(stagingTexture.Get(), backBuffer.Get());
+
+    // Map the staging texture to access the pixel data
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    hr = m_DeviceContext->Map(stagingTexture.Get(), 0, D3D11_MAP_READ, 0, &mappedResource);
+    if (FAILED(hr)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "ID3D11DeviceContext::Map() failed: %x", hr);
+        return;
+    }
+
+    // Assuming a simple format like DXGI_FORMAT_R8G8B8A8_UNORM
+    uint8_t* data = static_cast<uint8_t*>(mappedResource.pData);
+    int width = desc.Width;
+    int height = desc.Height;
+    int pitch = mappedResource.RowPitch;
+
+    // Example: Capture RGB values at a specific pixel (e.g., center of the screen)
+    int x = width / 2;
+    int y = height / 2;
+
+    uint8_t* pixel = data + y * pitch + x * 4;
+    uint8_t blue = pixel[0];
+    uint8_t green = pixel[1];
+    uint8_t red = pixel[2];
+
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
+                "Captured RGB at (%d, %d): R=%d, G=%d, B=%d", x, y, red, green, blue);
+
+    // Unmap the texture after reading
+    m_DeviceContext->Unmap(stagingTexture.Get(), 0);
 }
 
 void D3D11VARenderer::renderOverlay(Overlay::OverlayType type)

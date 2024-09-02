@@ -16,6 +16,7 @@ win32:!winrt {
     app.depends += soundio
 }
 
+
 # Support debug and release builds from command line for CI
 CONFIG += debug_and_release
 

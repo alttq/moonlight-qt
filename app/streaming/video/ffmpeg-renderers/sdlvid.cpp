@@ -540,6 +540,8 @@ ReadbackRetry:
         m_RgbFrame->buf[0] = av_buffer_create(pixels, m_RgbFrame->height * texturePitch, ffNoopFree, nullptr, 0);
         m_RgbFrame->data[0] = pixels;
         m_RgbFrame->linesize[0] = texturePitch;
+        qDebug() << "HERE: R =";
+
 
 #if LIBSWSCALE_VERSION_INT >= AV_VERSION_INT(6, 1, 100)
         // Perform multi-threaded color conversion into the locked texture buffer

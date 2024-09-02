@@ -89,6 +89,7 @@ void Pacer::renderOnMainThread()
 
     if (!m_RenderQueue.isEmpty()) {
         AVFrame* frame = m_RenderQueue.dequeue();
+
         m_FrameQueueLock.unlock();
 
         renderFrame(frame);
@@ -161,6 +162,8 @@ int Pacer::renderThread(void* context)
         }
 
         AVFrame* frame = me->m_RenderQueue.dequeue();
+
+
         me->m_FrameQueueLock.unlock();
 
         me->renderFrame(frame);
@@ -392,6 +395,7 @@ void Pacer::dropFrameForEnqueue(QQueue<AVFrame*>& queue)
     SDL_assert(queue.size() <= MAX_QUEUED_FRAMES);
     if (queue.size() == MAX_QUEUED_FRAMES) {
         AVFrame* frame = queue.dequeue();
+
         av_frame_free(&frame);
     }
 }

@@ -1,7 +1,6 @@
 #include <Limelight.h>
 #include "ffmpeg.h"
 #include "streaming/session.h"
-
 #include <h264_stream.h>
 
 extern "C" {
@@ -106,6 +105,8 @@ bool FFmpegVideoDecoder::notifyWindowChanged(PWINDOW_STATE_CHANGE_INFO info)
 {
     return m_FrontendRenderer->notifyWindowChanged(info);
 }
+
+
 
 int FFmpegVideoDecoder::getDecoderCapabilities()
 {
@@ -565,6 +566,7 @@ bool FFmpegVideoDecoder::completeInitialization(const AVCodec* decoder, enum AVP
         }
 
         AVFrame* frame = av_frame_alloc();
+
         if (!frame) {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                          "Failed to allocate frame");
@@ -1600,6 +1602,7 @@ void FFmpegVideoDecoder::decoderThreadProc()
             // We have output frames to receive. Let's poll until we get one,
             // and submit new input data if/when we get it.
             AVFrame* frame = av_frame_alloc();
+
             if (!frame) {
                 // Failed to allocate a frame but we did submit,
                 // so we can return DR_OK
@@ -1611,6 +1614,7 @@ void FFmpegVideoDecoder::decoderThreadProc()
             int err;
             do {
                 err = avcodec_receive_frame(m_VideoDecoderCtx, frame);
+
                 if (err == 0) {
                     SDL_assert(m_FrameInfoQueue.size() == m_FramesIn - m_FramesOut);
                     m_FramesOut++;
@@ -1673,8 +1677,10 @@ void FFmpegVideoDecoder::decoderThreadProc()
 
                     m_ActiveWndVideoStats.decodedFrames++;
 
-                    // Queue the frame for rendering (or render now if pacer is disabled)
+
+
                     m_Pacer->submitFrame(frame);
+
                 }
                 else if (err == AVERROR(EAGAIN)) {
                     VIDEO_FRAME_HANDLE handle;

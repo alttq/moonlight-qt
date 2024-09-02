@@ -1,6 +1,10 @@
 QT += core quick network quickcontrols2 svg
 CONFIG += c++11
 
+
+
+
+
 unix:!macx {
     TARGET = moonlight
 } else {
@@ -48,6 +52,10 @@ win32 {
         LIBS += -L$$PWD/../libs/windows/lib/arm64
         INCLUDEPATH += $$PWD/../libs/windows/include/arm64
     }
+
+    INCLUDEPATH += D:\libusb\libusb
+    LIBS += -LD:\libusb\build\v143\Win32\Release\lib -llibusb-1.0
+    DEFINES += HAVE_LIBUSB
 
     INCLUDEPATH += $$PWD/../libs/windows/include
     LIBS += ws2_32.lib winmm.lib dxva2.lib ole32.lib gdi32.lib user32.lib d3d9.lib dwmapi.lib dbghelp.lib
